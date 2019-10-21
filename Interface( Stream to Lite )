@@ -1,0 +1,133 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 10/21/2019 05:02:15 PM
+// Design Name: 
+// Module Name: Interface
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module Interface(
+    input s_aclk,
+    input s_aresetn,
+    input [3:0] inform,
+    input inform_valid,
+    output reg[31:0]X = 0,
+    output reg[31:0]T = 0,
+    output reg[31:0]N = 0,
+    output [31:0]Q,
+    output q_valid
+    );
+    reg inform_valid_prev = 1'b0;
+    
+    always@(posedge s_aclk)
+        inform_valid_prev <= inform_valid;
+        
+    reg valid_x = 0;
+    reg valid_t = 0;
+    reg valid_n = 0;
+    wire ready_x,ready_t,ready_n;
+    
+    reg [1:0] count_x_reg = 0;
+    reg [1:0] count_x = 0;
+    reg [1:0] count_t_reg = 0;
+    reg [1:0] count_t = 0;
+    reg [1:0] count_n_reg = 0;
+    reg [1:0] count_n = 0;
+    
+    
+    always@(posedge s_aclk)
+        count_x_reg <= count_x;
+    always@(*)begin
+    if(ready_x == 1'b1 && valid_x ==1'b1)
+        count_x = 2'd2;
+    else if(count_x_reg == 2'd2)
+        count_x_reg = 2'd0;
+    end
+    always@(*)begin
+    if(inform_valid_prev ==1'b0 && inform_valid ==1'b1)
+        valid_x = 1'b1;
+     else if(count_x_reg ==2'd2)
+        valid_x = 1'b0;
+    end
+    
+   
+   always@(posedge s_aclk)
+        count_t_reg <= count_t;
+    always@(*)begin
+    if(ready_t == 1'b1 && valid_t ==1'b1)
+        count_t = 2'd2;
+    else if(count_t_reg == 2'd2)
+        count_t_reg = 2'd0;
+    end
+    always@(*)begin
+    if(inform_valid_prev ==1'b0 && inform_valid ==1'b1)
+        valid_t = 1'b1;
+     else if(count_t_reg ==2'd2)
+        valid_t = 1'b0;
+    end
+    
+    
+    
+    
+    always@(posedge s_aclk)
+        count_n_reg <= count_n;
+    always@(*)begin
+    if(ready_n == 1'b1 && valid_n ==1'b1)
+        count_n = 2'd2;
+    else if(count_n_reg == 2'd2)
+        count_n_reg = 2'd0;
+    end
+    always@(*)begin
+    if(inform_valid_prev ==1'b0 && inform_valid ==1'b1)
+        valid_n = 1'b1;
+     else if(count_n_reg ==2'd2)
+        valid_n = 1'b0;
+    end
+    
+    
+    
+    always@(*)begin
+    if(inform_valid_prev == 1'b0 && inform_valid == 1'b1)begin
+        N=N+1'b1;
+        if(inform[3]==1'b0)begin
+            X = 32'd1;
+            T = 32'd1;
+            N = 32'd4;
+            end
+        else if(inform[0]==1'b1)begin
+            T = T + 1'd1;
+            X = X + inform[1];
+            end
+        end
+    end
+    
+    top myfunction(.s_aclk(s_aclk)
+                   ,.s_aresetn(s_aresetn)
+                   ,.s_x_tdata(X)
+                   ,.s_x_tvalid(valid_x)
+                   ,.s_x_tready(ready_x)
+                   ,.s_t_tdata(T)
+                   ,.s_t_tvalid(valid_t)
+                   ,.s_t_tready(ready_t)
+                   ,.s_n_tdata(N)
+                   ,.s_n_tvalid(valid_n)
+                   ,.s_n_tready(ready_n)
+                   ,.final_q(Q)
+                   ,.final_q_valid(q_valid));
+    
+    
+endmodule
