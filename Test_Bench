@@ -1,0 +1,79 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 10/21/2019 04:26:02 PM
+// Design Name: 
+// Module Name: test_bench
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module test_bench();
+    reg s_aclk;
+    reg s_aresetn;
+    reg [3:0] inform;
+    reg inform_valid;
+    wire [31:0] X;
+    wire [31:0] T;
+    wire [31:0] N;
+    wire [31:0] Q;
+    wire q_valid;
+ 
+ 
+ always
+    #2 s_aclk=~s_aclk;
+ 
+ Interface myinterface(
+                        .s_aclk(s_aclk),
+                        .s_aresetn(s_aresetn),
+                        .inform(inform),
+                        .inform_valid(inform_valid),
+                        .X(X),
+                        .T(T),
+                        .N(N),
+                        .Q(Q),
+                        .q_valid(q_valid));
+ initial
+ begin
+    s_aclk = 0;
+    s_aresetn = 0;
+    inform = 0;
+    inform_valid = 0;
+ end
+ 
+ 
+ initial
+ begin
+    #100 s_aresetn = 1;
+    #10 inform = 4'd0;
+    #5 inform_valid = 1;
+    #10 inform_valid = 0;
+    wait(q_valid == 1'b1);
+    
+    
+    #10 inform = 4'd9;
+    #5 inform_valid = 1;
+    #10 inform_valid = 0;
+    wait(q_valid == 1'b1);
+    
+    
+    #10 inform = 4'd0;
+    #5 inform_valid = 1;
+    #10 inform_valid = 0;
+    wait(q_valid == 1'b1);
+    
+ end
+
+endmodule
