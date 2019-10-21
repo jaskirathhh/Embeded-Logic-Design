@@ -1,0 +1,257 @@
+`timescale 1ns / 1ps
+module top#
+(
+parameter integer C_S_AXIS_X_TDATA_WIDTH = 32,
+parameter integer C_S_AXIS_T_TDATA_WIDTH = 32,
+parameter integer C_S_AXIS_N_TDATA_WIDTH = 32
+)
+(
+input s_aclk,
+input s_aresetn,
+input [C_S_AXIS_X_TDATA_WIDTH-1:0] s_x_tdata, //data in
+input s_x_tvalid,
+input [C_S_AXIS_T_TDATA_WIDTH-1:0] s_t_tdata, //data in
+input s_t_tvalid,
+input [C_S_AXIS_N_TDATA_WIDTH-1:0] s_n_tdata, //data in
+input s_n_tvalid,
+output s_x_tready,
+output s_t_tready,
+output s_n_tready,
+output final_q_valid,
+output [31:0] final_q
+);
+wire [31:0] X;
+wire X_valid;
+wire X_ready;
+floating_point_1 flt_x (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(s_x_tvalid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(s_x_tready), // output wire s_axis_a_tready
+.s_axis_a_tdata(s_x_tdata), // input wire [31 : 0] s_axis_a_tdata
+.m_axis_result_tvalid(X_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(X_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(X) // output wire [31 : 0] m_axis_result_tdata
+);
+wire [31:0] T;
+wire T_valid;
+wire T_ready;
+floating_point_2 flt_t (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(s_t_tvalid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(s_t_tready), // output wire s_axis_a_tready
+.s_axis_a_tdata(s_t_tdata), // input wire [31 : 0] s_axis_a_tdata
+.m_axis_result_tvalid(T_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(T_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(T) // output wire [31 : 0] m_axis_result_tdata
+);
+wire [31:0] N;
+wire N_valid;
+wire N_ready;
+floating_point_3 flt_n (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(s_n_tvalid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(s_n_tready), // output wire s_axis_a_tready
+.s_axis_a_tdata(s_n_tdata), // input wire [31 : 0] s_axis_a_tdata
+.m_axis_result_tvalid(N_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(N_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(N) // output wire [31 : 0] m_axis_result_tdata
+);
+wire [31:0] XbyT;
+wire XbyT_valid;
+wire XbyT_ready;
+div gen_XbyT (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(X_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(X_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(X), // input wire [31 : 0] s_axis_a_tdata
+.s_axis_b_tvalid(T_valid), // input wire s_axis_b_tvalid
+.s_axis_b_tready(T_ready), // output wire s_axis_b_tready
+.s_axis_b_tdata(T), // input wire [31 : 0] s_axis_b_tdata
+.m_axis_result_tvalid(XbyT_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(XbyT_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(XbyT) // output wire [31 : 0] m_axis_result_tdata
+);
+wire M_valid;
+wire M_ready;
+wire [31:0] M;
+float_to_fixed flt_to_fxd_m (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(XbyT_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(XbyT_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(XbyT), // input wire [31 : 0] s_axis_a_tdata
+.m_axis_result_tvalid(M_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(M_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(M) // output wire [31 : 0] m_axis_result_tdata
+);
+wire ln_N_valid;
+wire ln_N_ready;
+wire [31:0] ln_N_data;
+log ln_N (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(N_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(N_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(N), // input wire [31 : 0] s_axis_a_tdata
+.m_axis_result_tvalid(ln_N_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(ln_N_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(ln_N_data) // output wire [31 : 0] m_axis_result_tdata
+);
+wire lnN_by_T_valid;
+wire lnN_by_T_ready;
+wire [31:0] lnN_by_T_data;
+div lnN_by_T (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(ln_N_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(ln_N_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(ln_N_data), // input wire [31 : 0] s_axis_a_tdata
+.s_axis_b_tvalid(T_valid), // input wire s_axis_b_tvalid
+.s_axis_b_tready(T_ready), // output wire s_axis_b_tready
+.s_axis_b_tdata(T), // input wire [31 : 0] s_axis_b_tdata
+.m_axis_result_tvalid(lnN_by_T_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(lnN_by_T_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(lnN_by_T_data) // output wire [31 : 0] m_axis_result_tdata
+);
+wire [31:0] M_sq;
+wire M_sq_valid;
+wire M_sq_ready;
+square M_squared (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(M_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(M_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(M), // input wire [31 : 0] s_axis_a_tdata
+.s_axis_b_tvalid(M_valid), // input wire s_axis_b_tvalid
+.s_axis_b_tready(M_ready), // output wire s_axis_b_tready
+.s_axis_b_tdata(M), // input wire [31 : 0] s_axis_b_tdata
+.m_axis_result_tvalid(M_sq_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(M_sq_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(M_sq) // output wire [31 : 0] m_axis_result_tdata
+);
+wire [31:0] X_by_T_min_M_sq;
+wire X_by_T_min_M_sq_valid;
+wire X_by_T_min_M_sq_ready;
+subtraction  X_by_T_minus_M_sq (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(XbyT_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(XbyT_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(XbyT), // input wire [31 : 0] s_axis_a_tdata
+.s_axis_b_tvalid(M_sq_valid), // input wire s_axis_b_tvalid
+.s_axis_b_tready(M_sq_ready), // output wire s_axis_b_tready
+.s_axis_b_tdata(M_sq), // input wire [31 : 0] s_axis_b_tdata
+.m_axis_result_tvalid(X_by_T_min_M_sq_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(X_by_T_min_M_sq_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(X_by_T_min_M_sq) // output wire [31 : 0] m_axis_result_tdata
+);
+wire [31:0] two_logN_T;
+wire two_logN_T_valid;
+wire two_logN_T_ready;
+wire constt_ready;
+square two_logN_by_T (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(lnN_by_T_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(lnN_by_T_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(lnN_by_T_data), // input wire [31 : 0] s_axis_a_tdata
+.s_axis_b_tvalid(1), // input wire s_axis_b_tvalid
+.s_axis_b_tready(constt_ready), // output wire s_axis_b_tready
+.s_axis_b_tdata(32'b00111111010111100101101111011001), // input wire [31 : 0] s_axis_b_tdata
+.m_axis_result_tvalid(two_logN_T_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(two_logN_T_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(two_logN_T) // output wire [31 : 0] m_axis_result_tdata
+);
+wire [31:0] sqrt_2_logN_T;
+wire sqrt_2_logN_T_valid;
+wire sqrt_2_logN_T_ready;
+sqrt sqrt_2logN_by_T (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(two_logN_T_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(two_logN_T_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(two_logN_T), // input wire [31 : 0] s_axis_a_tdata
+.m_axis_result_tvalid(sqrt_2_logN_T_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(sqrt_2_logN_T_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(sqrt_2_logN_T) // output wire [31 : 0] m_axis_result_tdata
+);
+wire [31:0] V;
+wire V_ready;
+wire V_valid;
+addition gen_V (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(X_by_T_min_M_sq_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(X_by_T_min_M_sq_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(X_by_T_min_M_sq), // input wire [31 : 0] s_axis_a_tdata
+.s_axis_b_tvalid(sqrt_2_logN_T_valid), // input wire s_axis_b_tvalid
+.s_axis_b_tready(sqrt_2_logN_T_ready), // output wire s_axis_b_tready
+.s_axis_b_tdata(sqrt_2_logN_T), // input wire [31 : 0] s_axis_b_tdata
+.m_axis_result_tvalid(V_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(V_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(V) // output wire [31 : 0] m_axis_result_tdata
+);
+wire [31:0] logN_T;
+wire logN_T_valid;
+wire logN_T_ready;
+wire constt1_ready;
+square logN_by_T (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(lnN_by_T_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(lnN_by_T_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(lnN_by_T_data), // input wire [31 : 0] s_axis_a_tdata
+.s_axis_b_tvalid(1), // input wire s_axis_b_tvalid
+.s_axis_b_tready(constt1_ready), // output wire s_axis_b_tready
+.s_axis_b_tdata(32'b00111110110111100101101111011001), // input wire [31 : 0] s_axis_b_tdata
+.m_axis_result_tvalid(logN_T_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(logN_T_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(logN_T) // output wire [31 : 0] m_axis_result_tdata
+);
+wire [31:0] ins_sqrt;
+wire ins_sqrt_valid;
+wire ins_sqrt_ready;
+square inside_sqrt (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(logN_T_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(logN_T_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(logN_T), // input wire [31 : 0] s_axis_a_tdata
+.s_axis_b_tvalid(V_valid), // input wire s_axis_b_tvalid
+.s_axis_b_tready(V_ready), // output wire s_axis_b_tready
+.s_axis_b_tdata(V), // input wire [31 : 0] s_axis_b_tdata
+.m_axis_result_tvalid(ins_sqrt_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(ins_sqrt_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(ins_sqrt) // output wire [31 : 0] m_axis_result_tdata
+);
+wire [31:0] final_sqrt;
+wire final_sqrt_valid;
+wire final_sqrt_ready;
+sqrt sqrt_final (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(ins_sqrt_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(ins_sqrt_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(ins_sqrt), // input wire [31 : 0] s_axis_a_tdata
+.m_axis_result_tvalid(final_sqrt_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(final_sqrt_ready), // input wire m_axis_result_tready
+.m_axis_result_tdata(final_sqrt) // output wire [31 : 0] m_axis_result_tdata
+);
+addition gen_q (
+.aclk(s_aclk), // input wire aclk
+.aresetn(s_aresetn), // input wire aresetn
+.s_axis_a_tvalid(final_sqrt_valid), // input wire s_axis_a_tvalid
+.s_axis_a_tready(final_sqrt_ready), // output wire s_axis_a_tready
+.s_axis_a_tdata(final_sqrt), // input wire [31 : 0] s_axis_a_tdata
+.s_axis_b_tvalid(M_valid), // input wire s_axis_b_tvalid
+.s_axis_b_tready(M_ready), // output wire s_axis_b_tready
+.s_axis_b_tdata(M), // input wire [31 : 0] s_axis_b_tdata
+.m_axis_result_tvalid(final_q_valid), // output wire m_axis_result_tvalid
+.m_axis_result_tready(1), // input wire m_axis_result_tready
+.m_axis_result_tdata(final_q) // output wire [31 : 0] m_axis_result_tdata
+);
+endmodule
