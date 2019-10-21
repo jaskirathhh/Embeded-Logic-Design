@@ -1,0 +1,99 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 10/21/2019 10:53:02 AM
+// Design Name: 
+// Module Name: test_bench
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+`timescale 1ns / 1ps
+module test_bench();
+
+reg s_aclk;
+reg s_aresetn;
+reg [31:0] s_x_tdata;
+reg s_x_tvalid;
+reg [31:0] s_t_tdata;
+reg s_t_tvalid;
+reg [31:0] s_n_tdata;
+reg s_n_tvalid;
+wire s_x_tready;
+wire s_t_tready;
+wire s_n_tready;
+wire final_q_valid;
+wire [31:0] final_q;
+
+
+top myfunction(
+.final_q_valid(final_q_valid),
+.final_q(final_q),
+.s_aclk(s_aclk),
+.s_aresetn(s_aresetn),
+.s_x_tvalid(s_x_tvalid),
+.s_x_tdata(s_x_tdata),
+.s_x_tready(s_x_tready),
+.s_t_tvalid(s_t_tvalid),
+.s_t_tdata(s_t_tdata),
+.s_t_tready(s_t_tready),
+.s_n_tvalid(s_n_tvalid),
+.s_n_tdata(s_n_tdata),
+.s_n_tready(s_n_tready)
+);
+initial
+    begin
+    s_aclk=0;
+    s_aresetn=0;
+    s_x_tdata=0;
+    s_x_tvalid=0;
+    s_t_tdata=0;
+    s_t_tvalid=0;
+    s_n_tdata=0;
+    s_n_tvalid=0;
+end
+always
+    #5 s_aclk=~s_aclk;
+    
+initial
+begin
+    #100 s_aresetn=1;
+    #10 s_x_tdata=32'd5;
+    #5 s_x_tvalid=1;
+    while(s_x_tready==0)
+        #5 s_x_tvalid=1;
+    #10 s_x_tvalid=0;
+end
+
+
+initial
+begin
+    #110 s_t_tdata=32'd6;
+    #5 s_t_tvalid=1;
+    while(s_t_tready==0)
+        #5 s_t_tvalid=1;
+    #10 s_t_tvalid=0;
+end
+
+
+initial
+    begin
+    #110 s_n_tdata=32'd8;
+    #5 s_n_tvalid=1;
+    while(s_n_tready==0)
+        #5 s_n_tvalid=1;
+    #10 s_n_tvalid=0;
+    wait(final_q_valid==1'b1);
+end
+endmodule
